@@ -1,0 +1,16 @@
+# dune exec bin/main.exe -- test.oa
+# OCAMLPARAM: unset
+# Shared cache: enabled-except-user-rules
+# Shared cache location: /Users/dariushghassemieh/.cache/dune/db
+# Workspace root: /Users/dariushghassemieh/ossa/ossac
+# Auto-detected concurrency: 8
+# Dune context:
+#  { name = "default"
+#  ; kind = "default"
+#  ; profile = Dev
+#  ; merlin = true
+#  ; fdo_target_exe = None
+#  ; build_dir = In_build_dir "default"
+#  ; instrument_with = []
+#  }
+$ /Users/dariushghassemieh/.opam/5.1.1/bin/ocamlc.opt -config > /var/folders/ys/mq3930t55m9cm8k64s8kjd580000gp/T/dune_cedacb_output

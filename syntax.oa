@@ -1,0 +1,92 @@
+
+
+main :: () -> int {
+    io::printf("one: %d, two: %d", 1, 2);
+
+    let (a, b) = (1, 2);
+
+    let array = [1, 2, 3];
+
+    // closures
+    array => |ref v: int| {
+        v += 1;
+    };
+
+    0..10 => |i: int| {
+        io::printf("%d\n", i);
+    }
+
+    let add: (int, int) -> int = |a: int, b: int| {
+        a + b
+    };
+
+    array => (ref v: int) {
+        io::printf("%d\n", v);
+    };
+
+
+    let example: *Example = new Example {
+        num = 0,
+        name = "hello",
+    };
+
+    let example: Example = Example {
+        num = 0,
+        name = "hello",
+    };
+
+    // enum 
+    let x = Some(42);
+
+    match x {
+        Some(t) => { 
+            io::printf("%d", t); 
+        };
+        None => {
+            io::printf("none"); 
+        };
+    };
+
+    loop {
+
+    }
+
+    let n = if example.num == 0 { 
+        10
+    } else {
+        0
+    };
+}
+
+add :: (a: int, b: int) -> int {
+    return a + b;
+}
+
+max :: (a: int, b: int) -> int {
+    return a > b ? a : b;
+}
+
+struct Example {
+    num: int,
+    name: string
+}
+
+enum Option <T> {
+    Some(T),
+    None
+}
+
+struct Dog : Animal {
+    speak :: () {
+        io::printf("woof");
+    }
+
+    eat :: () {
+        io::printf("nom nom");
+    }
+}
+
+interface Animal {
+    speak :: ();
+    eat :: ();
+}
