@@ -12,7 +12,7 @@ type token =
   | Loop
   | Struct
   | Enum
-  | Interface
+  | Namespace
   | Ref
   | New
   | Return
@@ -57,24 +57,31 @@ type token =
   | RBracket
   | EOF
 
-type span = {
-  start : int;
-  finish : int;
-}
-
 type spanned_token = {
   tok : token;
-  span : span;
+  span : int * int;  (* start_pos, end_pos *)
+  line : int;
+}
+
+type error = {
+  msg : string;
+  line : int;
 }
 
 type lexer = {
   source : string;
   mutable pos : int;
+  mutable line : int;
   length : int;
+  mutable errors : error list;
 }
 
 let create source =
-  { source; pos = 0; length = String.length source }
+  { source; pos = 0; line = 1;
+    length = String.length source; errors = [] }
+
+let add_error l msg =
+  l.errors <- { msg; line = l.line } :: l.errors
 
 let peek l =
   if l.pos >= l.length then None
@@ -87,11 +94,12 @@ let peek_next l =
 let advance l =
   let c = l.source.[l.pos] in
   l.pos <- l.pos + 1;
+  if c = '\n' then l.line <- l.line + 1;
   c
 
 let match_char l expected =
   match peek l with
-  | Some c when c = expected -> l.pos <- l.pos + 1; true
+  | Some c when c = expected -> ignore (advance l); true
   | _ -> false
 
 let is_digit c = c >= '0' && c <= '9'
@@ -106,7 +114,6 @@ let skip_whitespace_and_comments l =
     | Some '/' -> begin
       match peek_next l with
       | Some '/' ->
-        (* line comment *)
         ignore (advance l); ignore (advance l);
         let rec skip_line () =
           match peek l with
@@ -115,11 +122,12 @@ let skip_whitespace_and_comments l =
         in
         skip_line (); go ()
       | Some '*' ->
-        (* block comment *)
+        let start_line = l.line in
         ignore (advance l); ignore (advance l);
         let rec skip_block () =
           match peek l with
-          | None -> ()
+          | None ->
+            l.errors <- { msg = "unterminated block comment"; line = start_line } :: l.errors
           | Some '*' ->
             ignore (advance l);
             (match peek l with
@@ -143,7 +151,7 @@ let keyword_or_ident s =
   | "loop" -> Loop
   | "struct" -> Struct
   | "enum" -> Enum
-  | "interface" -> Interface
+  | "namespace" -> Namespace
   | "ref" -> Ref
   | "new" -> New
   | "return" -> Return
@@ -164,9 +172,7 @@ let lex_number l =
           ignore (advance l)
         done;
         true
-      | Some '.' ->
-        (* this is a range like 0..10, not a float *)
-        false
+      | Some '.' -> false
       | _ -> false
     end
     | _ -> false
@@ -175,56 +181,71 @@ let lex_number l =
   if is_float then FloatLiteral text else IntLiteral text
 
 let lex_string l =
-  (* opening quote already consumed *)
+  let start_line = l.line in
   let buf = Buffer.create 64 in
   let rec go () =
     match peek l with
-    | None -> failwith "unterminated string literal"
-    | Some '"' -> ignore (advance l)
+    | None ->
+      l.errors <- { msg = "unterminated string literal"; line = start_line } :: l.errors;
+      StringLiteral (Buffer.contents buf)
+    | Some '"' -> ignore (advance l); StringLiteral (Buffer.contents buf)
     | Some '\\' ->
       ignore (advance l);
-      let c = match peek l with
-        | None -> failwith "unterminated escape in string"
-        | Some 'n' -> '\n'
-        | Some 't' -> '\t'
-        | Some 'r' -> '\r'
-        | Some '\\' -> '\\'
-        | Some '"' -> '"'
-        | Some '0' -> '\000'
-        | Some c -> c
-      in
-      ignore (advance l);
-      Buffer.add_char buf c;
-      go ()
+      (match peek l with
+       | None ->
+         l.errors <- { msg = "unterminated escape sequence in string"; line = l.line } :: l.errors;
+         StringLiteral (Buffer.contents buf)
+       | Some 'n' -> ignore (advance l); Buffer.add_char buf '\n'; go ()
+       | Some 't' -> ignore (advance l); Buffer.add_char buf '\t'; go ()
+       | Some 'r' -> ignore (advance l); Buffer.add_char buf '\r'; go ()
+       | Some '\\' -> ignore (advance l); Buffer.add_char buf '\\'; go ()
+       | Some '"' -> ignore (advance l); Buffer.add_char buf '"'; go ()
+       | Some '0' -> ignore (advance l); Buffer.add_char buf '\000'; go ()
+       | Some c ->
+         add_error l (Printf.sprintf "unknown escape sequence '\\%c'" c);
+         ignore (advance l); Buffer.add_char buf c; go ())
     | Some c ->
       ignore (advance l);
       Buffer.add_char buf c;
       go ()
   in
-  go ();
-  StringLiteral (Buffer.contents buf)
+  go ()
 
 let lex_char l =
-  (* opening quote already consumed *)
-  let c = match peek l with
-    | None -> failwith "unterminated char literal"
-    | Some '\\' ->
-      ignore (advance l);
-      (match peek l with
-       | None -> failwith "unterminated escape in char"
-       | Some 'n' -> ignore (advance l); '\n'
-       | Some 't' -> ignore (advance l); '\t'
-       | Some 'r' -> ignore (advance l); '\r'
-       | Some '\\' -> ignore (advance l); '\\'
-       | Some '\'' -> ignore (advance l); '\''
-       | Some '0' -> ignore (advance l); '\000'
-       | Some c -> ignore (advance l); c)
-    | Some c -> ignore (advance l); c
-  in
-  (match peek l with
-   | Some '\'' -> ignore (advance l)
-   | _ -> failwith "unterminated char literal");
-  CharLiteral c
+  match peek l with
+  | None ->
+    add_error l "unterminated character literal";
+    CharLiteral '\000'
+  | Some '\\' ->
+    ignore (advance l);
+    let c = match peek l with
+      | None ->
+        add_error l "unterminated escape sequence in character literal";
+        '\000'
+      | Some 'n' -> ignore (advance l); '\n'
+      | Some 't' -> ignore (advance l); '\t'
+      | Some 'r' -> ignore (advance l); '\r'
+      | Some '\\' -> ignore (advance l); '\\'
+      | Some '\'' -> ignore (advance l); '\''
+      | Some '0' -> ignore (advance l); '\000'
+      | Some c ->
+        add_error l (Printf.sprintf "unknown escape sequence '\\%c'" c);
+        ignore (advance l); c
+    in
+    (match peek l with
+     | Some '\'' -> ignore (advance l)
+     | _ -> add_error l "unterminated character literal");
+    CharLiteral c
+  | Some '\'' ->
+    add_error l "empty character literal";
+    ignore (advance l);
+    CharLiteral '\000'
+  | Some c ->
+    ignore (advance l);
+    (match peek l with
+     | Some '\'' -> ignore (advance l)
+     | _ -> add_error l "unterminated character literal");
+    CharLiteral c
 
 let lex_identifier l =
   let start = l.pos in
@@ -234,8 +255,9 @@ let lex_identifier l =
   let text = String.sub l.source start (l.pos - start) in
   keyword_or_ident text
 
-let lex_token l =
-  let start = l.pos in
+let rec lex_token l =
+  let start_pos = l.pos in
+  let start_line = l.line in
   let tok = match advance l with
     | '(' -> LParen
     | ')' -> RParen
@@ -273,15 +295,18 @@ let lex_token l =
     | c when is_alpha c ->
       l.pos <- l.pos - 1;
       lex_identifier l
-    | c -> failwith (Printf.sprintf "unexpected character: '%c' at position %d" c l.pos)
+    | c ->
+      add_error l (Printf.sprintf "unexpected character '%c'" c);
+      (* skip the bad character and try the next token *)
+      lex_token l |> fun st -> st.tok
   in
-  { tok; span = { start; finish = l.pos } }
+  { tok; span = (start_pos, l.pos); line = start_line }
 
 let lex_all l =
   let rec go acc =
     skip_whitespace_and_comments l;
     if l.pos >= l.length then
-      List.rev ({ tok = EOF; span = { start = l.pos; finish = l.pos } } :: acc)
+      List.rev ({ tok = EOF; span = (l.pos, l.pos); line = l.line } :: acc)
     else
       let tok = lex_token l in
       go (tok :: acc)
@@ -290,7 +315,8 @@ let lex_all l =
 
 let tokenize source =
   let l = create source in
-  lex_all l
+  let tokens = lex_all l in
+  (tokens, List.rev l.errors)
 
 let token_to_string = function
   | IntLiteral s -> Printf.sprintf "INT(%s)" s
@@ -305,7 +331,7 @@ let token_to_string = function
   | Loop -> "LOOP"
   | Struct -> "STRUCT"
   | Enum -> "ENUM"
-  | Interface -> "INTERFACE"
+  | Namespace -> "NAMESPACE"
   | Ref -> "REF"
   | New -> "NEW"
   | Return -> "RETURN"
@@ -346,3 +372,9 @@ let token_to_string = function
   | LBracket -> "["
   | RBracket -> "]"
   | EOF -> "EOF"
+
+let span_to_string (s, e) =
+  Printf.sprintf "%d..%d" s e
+
+let error_to_string (err : error) =
+  Printf.sprintf "line %d: error: %s" err.line err.msg

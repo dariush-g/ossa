@@ -62,10 +62,6 @@ add :: (a: int, b: int) -> int {
     return a + b;
 }
 
-max :: (a: int, b: int) -> int {
-    return a > b ? a : b;
-}
-
 struct Example {
     num: int,
     name: string
@@ -76,17 +72,3 @@ enum Option <T> {
     None
 }
 
-struct Dog : Animal {
-    speak :: () {
-        io::printf("woof");
-    }
-
-    eat :: () {
-        io::printf("nom nom");
-    }
-}
-
-interface Animal {
-    speak :: ();
-    eat :: ();
-}

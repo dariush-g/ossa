@@ -1,5 +1,18 @@
 
+
+enum Option<T> {
+    Some(T),
+    None
+}
+
 main :: () -> int {
-    
+    let x = if 1 {
+        2
+    } else { 
+        3
+    };
+
     return 0;
 }
+
+

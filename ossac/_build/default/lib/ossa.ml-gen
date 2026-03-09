@@ -8,3 +8,6 @@ module Lexer = Ossa__Lexer
 
 (** @canonical Ossa.Parser *)
 module Parser = Ossa__Parser
+
+(** @canonical Ossa.Resolver *)
+module Resolver = Ossa__Resolver
