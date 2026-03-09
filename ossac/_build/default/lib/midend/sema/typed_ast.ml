@@ -15,8 +15,6 @@ type t_pattern =
   | PVariant of symbol * t_pattern list
   | PLiteral of t_literal
 
-type t_param = { name : string; typ : Ast.typ option; mode : Ast.param_mode }
-
 type t_expr =
   | Unary of unary_op * t_expr
   | Binary of binary_op * t_expr * t_expr
@@ -28,7 +26,6 @@ type t_expr =
   | EnumInit of symbol * t_enum_init_field list
   | Index of t_expr * t_expr
   | If of t_expr * t_block * t_block
-  | Closure of t_param list * t_block
 
 and t_struct_init_field = { sf_init_sid : symbol; sf_init_value : t_expr }
 and t_enum_init_field = { ef_init_sid : symbol option; ef_init_value : t_expr }
