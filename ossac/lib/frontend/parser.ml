@@ -17,11 +17,7 @@ type parser_state = {
 (* ── helpers ─────────────────────────────────────────────────────── *)
 
 let create tokens =
-  { tokens = Array.of_list tokens
-  ; pos = 0
-  ; errors = []
-  ; generic_scopes = []
-  }
+  { tokens = Array.of_list tokens; pos = 0; errors = []; generic_scopes = [] }
 
 let current p =
   if p.pos < Array.length p.tokens then p.tokens.(p.pos)
@@ -42,17 +38,14 @@ let advance p =
 let eat p tok =
   if current_tok p = tok then (
     ignore (advance p);
-    true
-  ) else
-    false
+    true)
+  else false
 
 let expect p tok =
-  if current_tok p = tok then
-    ignore (advance p)
+  if current_tok p = tok then ignore (advance p)
   else
     error p
-      (Printf.sprintf "expected %s, got %s"
-         (token_to_string tok)
+      (Printf.sprintf "expected %s, got %s" (token_to_string tok)
          (token_to_string (current_tok p)))
 
 let expect_ident p =
@@ -65,18 +58,14 @@ let expect_ident p =
         (Printf.sprintf "expected identifier, got %s"
            (token_to_string (current_tok p)))
 
-let push_scope p =
-  p.generic_scopes <- StringSet.empty :: p.generic_scopes
+let push_scope p = p.generic_scopes <- StringSet.empty :: p.generic_scopes
 
 let pop_scope p =
-  match p.generic_scopes with
-  | _ :: rest -> p.generic_scopes <- rest
-  | [] -> ()
+  match p.generic_scopes with _ :: rest -> p.generic_scopes <- rest | [] -> ()
 
 let add_generic p name =
   match p.generic_scopes with
-  | scope :: rest ->
-      p.generic_scopes <- StringSet.add name scope :: rest
+  | scope :: rest -> p.generic_scopes <- StringSet.add name scope :: rest
   | [] -> ()
 
 let is_generic p name =
@@ -104,18 +93,14 @@ let rec parse_type p =
   | Star ->
       ignore (advance p);
       TPtr (parse_type p)
-  | LParen ->
-    ignore (advance p);
-    let tys = parse_comma_types p in
-    expect p RParen;
-    if eat p Arrow then
-      let ret = parse_type p in
-      TFunc (tys, ret)
-    else (
-      match tys with
-      | [ t ] -> t
-      | _ -> TTuple tys
-    )
+  | LParen -> (
+      ignore (advance p);
+      let tys = parse_comma_types p in
+      expect p RParen;
+      if eat p Arrow then
+        let ret = parse_type p in
+        TFunc (tys, ret)
+      else match tys with [ t ] -> t | _ -> TTuple tys)
   | LBracket ->
       ignore (advance p);
       let t = parse_type p in
@@ -123,16 +108,13 @@ let rec parse_type p =
       TArray t
   | Identifier s ->
       ignore (advance p);
-      let base =
-        if is_generic p s then TGeneric s else resolve_named_type s
-      in
+      let base = if is_generic p s then TGeneric s else resolve_named_type s in
       if current_tok p = Less then (
         ignore (advance p);
         let args = parse_comma_types p in
         expect p Greater;
-        TApp (base, args)
-      ) else
-        base
+        TApp (base, args))
+      else base
   | _ ->
       error p
         (Printf.sprintf "expected type, got %s"
@@ -158,15 +140,11 @@ and resolve_named_type s =
   | _ -> TNamed [ s ]
 
 and parse_comma_types p =
-  if current_tok p = RParen || current_tok p = Greater then
-    []
+  if current_tok p = RParen || current_tok p = Greater then []
   else
     let first = parse_type p in
     let rec go acc =
-      if eat p Comma then
-        go (parse_type p :: acc)
-      else
-        List.rev acc
+      if eat p Comma then go (parse_type p :: acc) else List.rev acc
     in
     go [ first ]
 
@@ -183,9 +161,8 @@ let rec parse_pattern p =
         ignore (advance p);
         let pats = parse_comma_patterns p in
         expect p RParen;
-        PVariant ([ s ], pats)
-      ) else
-        PVar s
+        PVariant ([ s ], pats))
+      else PVar s
   | LParen ->
       ignore (advance p);
       let pats = parse_comma_patterns p in
@@ -209,19 +186,13 @@ let rec parse_pattern p =
            (token_to_string (current_tok p)))
 
 and parse_comma_patterns p =
-  if current_tok p = RParen then
-    []
+  if current_tok p = RParen then []
   else
     let first = parse_pattern p in
     let rec go acc =
-      if eat p Comma then
-        go (parse_pattern p :: acc)
-      else
-        List.rev acc
+      if eat p Comma then go (parse_pattern p :: acc) else List.rev acc
     in
     go [ first ]
-
-(* ── expressions (pratt parser) ──────────────────────────────────── *)
 
 let prefix_binding_power = function
   | Minus -> 17
@@ -312,26 +283,24 @@ and parse_expr_bp p min_bp =
             let else_e = parse_expr_bp p 0 in
             lhs :=
               If
-                ( !lhs
-                , { stmts = []; tail = Some then_e }
-                , { stmts = []; tail = Some else_e } )
+                ( !lhs,
+                  { stmts = []; tail = Some then_e },
+                  { stmts = []; tail = Some else_e } )
         | _ -> continue_ := false
       end
     | _ ->
-        let (lbp, rbp) = infix_binding_power tok in
+        let lbp, rbp = infix_binding_power tok in
         if lbp >= min_bp then (
           let rbp = if is_assign_tok tok then lbp else rbp in
           ignore (advance p);
           let rhs = parse_expr_bp p rbp in
-          lhs := Binary (token_to_binary_op tok, !lhs, rhs)
-        ) else
-          continue_ := false
+          lhs := Binary (token_to_binary_op tok, !lhs, rhs))
+        else continue_ := false
   done;
   if current_tok p = FatArrow then (
     ignore (advance p);
     let closure = parse_closure_or_paren_closure p in
-    lhs := Iterate (!lhs, closure)
-  );
+    lhs := Iterate (!lhs, closure));
   !lhs
 
 and parse_prefix p =
@@ -340,9 +309,8 @@ and parse_prefix p =
   if rbp > 0 then (
     ignore (advance p);
     let e = parse_expr_bp p rbp in
-    Unary (token_to_unary_op tok, e)
-  ) else
-    parse_atom p
+    Unary (token_to_unary_op tok, e))
+  else parse_atom p
 
 and parse_atom p =
   match current_tok p with
@@ -399,11 +367,10 @@ and parse_path_or_struct_init p =
       if is_struct_init then (
         let fields = parse_init_fields p in
         expect p RBrace;
-        StructInit (path, fields)
-      ) else (
+        StructInit (path, fields))
+      else (
         p.pos <- saved;
-        Path path
-      )
+        Path path)
   | _ -> Path path
 
 and parse_path p =
@@ -412,9 +379,8 @@ and parse_path p =
     if current_tok p = DoubleColon then (
       ignore (advance p);
       let next = expect_ident p in
-      go (next :: acc)
-    ) else
-      List.rev acc
+      go (next :: acc))
+    else List.rev acc
   in
   go [ first ]
 
@@ -452,10 +418,8 @@ and parse_if_expr p =
       if current_tok p = If then
         let e = parse_if_expr p in
         { stmts = []; tail = Some e }
-      else
-        parse_block p
-    else
-      { stmts = []; tail = None }
+      else parse_block p
+    else { stmts = []; tail = None }
   in
   If (cond, then_block, else_block)
 
@@ -523,17 +487,16 @@ and parse_paren_or_tuple p =
   expect p LParen;
   if current_tok p = RParen then (
     ignore (advance p);
-    Tuple []
-  ) else
+    Tuple [])
+  else
     let first = parse_expr p in
     if eat p Comma then (
       let rest = parse_comma_exprs p in
       expect p RParen;
-      Tuple (first :: rest)
-    ) else (
+      Tuple (first :: rest))
+    else (
       expect p RParen;
-      first
-    )
+      first)
 
 and parse_comma_exprs p =
   let rec go acc =
@@ -587,7 +550,7 @@ and parse_call_args p =
 
 and parse_block p =
   expect p LBrace;
-  let (stmts, tail) = parse_stmts p in
+  let stmts, tail = parse_stmts p in
   expect p RBrace;
   { stmts; tail }
 
@@ -595,14 +558,13 @@ and parse_stmts p =
   let rec go acc =
     match current_tok p with
     | RBrace | EOF -> (List.rev acc, None)
-    | _ ->
+    | _ -> (
         let s = parse_stmt p in
         match s with
-        | Expr e when current_tok p = RBrace ->
-            (List.rev acc, Some e)
+        | Expr e when current_tok p = RBrace -> (List.rev acc, Some e)
         | _ ->
             expect p Semicolon;
-            go (s :: acc)
+            go (s :: acc))
   in
   go []
 
@@ -622,10 +584,8 @@ and parse_let p =
 
 and parse_return p =
   expect p Return;
-  if current_tok p = Semicolon || current_tok p = RBrace then
-    Return None
-  else
-    Return (Some (parse_expr p))
+  if current_tok p = Semicolon || current_tok p = RBrace then Return None
+  else Return (Some (parse_expr p))
 
 and parse_loop p =
   expect p Loop;
@@ -649,12 +609,11 @@ and parse_param_list p =
 (* ── generics ────────────────────────────────────────────────────── *)
 
 let parse_generics p =
-  if eat p Less then (
+  if eat p With then (
     push_scope p;
     let rec go acc =
       match current_tok p with
-      | Greater | EOF ->
-          ignore (advance p);
+      | DoubleColon | LBrace | LParen | EOF ->
           List.rev acc
       | _ ->
           let name = expect_ident p in
@@ -662,15 +621,13 @@ let parse_generics p =
           ignore (eat p Comma);
           go (name :: acc)
     in
-    go []
-  ) else
-    []
+    go [])
+  else []
 
-(* ── top-level declarations ──────────────────────────────────────── *)
 
 let parse_func_decl p name =
-  expect p DoubleColon;
   let generics = parse_generics p in
+  expect p DoubleColon;
   expect p LParen;
   let params = parse_param_list p in
   expect p RParen;
@@ -678,11 +635,12 @@ let parse_func_decl p name =
   let body = parse_block p in
   if generics <> [] then pop_scope p;
   FuncDec
-    { fname = name
-    ; fgenerics = generics
-    ; fparams = params
-    ; fret = ret
-    ; fbody = body
+    {
+      fname = name;
+      fgenerics = generics;
+      fparams = params;
+      fret = ret;
+      fbody = body;
     }
 
 let parse_struct_decl p =
@@ -693,18 +651,17 @@ let parse_struct_decl p =
   let rec go fields funcs =
     match current_tok p with
     | RBrace | EOF -> (List.rev fields, List.rev funcs)
-    | Identifier _ when
-        (let saved = p.pos in
-         ignore (advance p);
-         let is_func = current_tok p = DoubleColon in
-         p.pos <- saved;
-         is_func) ->
+    | Identifier _
+      when let saved = p.pos in
+           ignore (advance p);
+           let is_func = current_tok p = DoubleColon in
+           p.pos <- saved;
+           is_func ->
         let fname = expect_ident p in
         let decl = parse_func_decl p fname in
-        begin
-          match decl with
-          | FuncDec fd -> go fields (fd :: funcs)
-          | _ -> go fields funcs
+        begin match decl with
+        | FuncDec fd -> go fields (fd :: funcs)
+        | _ -> go fields funcs
         end
     | _ ->
         let field_name = expect_ident p in
@@ -713,15 +670,11 @@ let parse_struct_decl p =
         ignore (eat p Comma);
         go ({ field_name; field_typ } :: fields) funcs
   in
-  let (fields, funcs) = go [] [] in
+  let fields, funcs = go [] [] in
   expect p RBrace;
   if generics <> [] then pop_scope p;
   StructDec
-    { sname = name
-    ; sgenerics = generics
-    ; sfields = fields
-    ; sfuncs = funcs
-    }
+    { sname = name; sgenerics = generics; sfields = fields; sfuncs = funcs }
 
 let parse_enum_decl p =
   expect p Enum;
@@ -746,23 +699,23 @@ let parse_enum_decl p =
         expect p Colon;
         let ftyp = parse_type p in
         ignore (eat p Comma);
-        parse_named_fields ({ field_name = Some fname; field_type = ftyp } :: acc)
+        parse_named_fields
+          ({ field_name = Some fname; field_type = ftyp } :: acc)
   in
 
   let parse_variant_fields p =
     if eat p LParen then (
       let fs = parse_tuple_fields [] in
       expect p RParen;
-      fs
-    ) else if eat p LBrace then (
+      fs)
+    else if eat p LBrace then (
       let fs = parse_named_fields [] in
       expect p RBrace;
-      fs
-    ) else
+      fs)
+    else
       match current_tok p with
       | Comma | RBrace -> []
-      | _ ->
-          error p "expected '(', '{', ',' or '}' after enum variant name"
+      | _ -> error p "expected '(', '{', ',' or '}' after enum variant name"
   in
 
   let rec go acc =
@@ -779,11 +732,7 @@ let parse_enum_decl p =
   let variants = go [] in
   expect p RBrace;
   if generics <> [] then pop_scope p;
-  EnumDec
-    { ename = name
-    ; egenerics = generics
-    ; evariants = variants
-    }
+  EnumDec { ename = name; egenerics = generics; evariants = variants }
 
 (* ── program ─────────────────────────────────────────────────────── *)
 
@@ -793,10 +742,7 @@ let rec parse_namespace_decl p =
   expect p LBrace;
   let decls = parse_program p in
   expect p RBrace;
-  NamespaceDec { 
-    npath = path; 
-    ndecls = decls 
-  }
+  NamespaceDec { npath = path; ndecls = decls }
 
 and parse_decl p =
   try
@@ -811,16 +757,16 @@ and parse_decl p =
         error p
           (Printf.sprintf "expected declaration, got %s"
              (token_to_string (current_tok p)))
-  with
-  | Parse_abort ->
-      synchronize_decl p;
-      FuncDec
-        { fname = "_"
-        ; fgenerics = []
-        ; fparams = []
-        ; fret = None
-        ; fbody = { stmts = []; tail = None }
-        }
+  with Parse_abort ->
+    synchronize_decl p;
+    FuncDec
+      {
+        fname = "_";
+        fgenerics = [];
+        fparams = [];
+        fret = None;
+        fbody = { stmts = []; tail = None };
+      }
 
 and parse_program p =
   let rec go acc =
@@ -834,4 +780,3 @@ let parse tokens =
   let p = create tokens in
   let decls = parse_program p in
   (decls, List.rev p.errors)
-

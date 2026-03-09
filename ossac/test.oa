@@ -1,18 +1,17 @@
 
 
-enum Option<T> {
-    Some(T),
-    None
-}
 
 main :: () -> int {
-    let x = if 1 {
-        2
-    } else { 
-        3
-    };
+    let a = 5;
 
     return 0;
 }
 
+enum Option with T {
+    Some(T),
+    None
+}
 
+generic_function with T :: (x: T) -> int {
+    return 0;
+}

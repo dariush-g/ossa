@@ -24,7 +24,6 @@ main :: () -> int {
         io::printf("%d\n", v);
     };
 
-
     let example: *Example = new Example {
         num = 0,
         name = "hello",
@@ -67,7 +66,7 @@ struct Example {
     name: string
 }
 
-enum Option <T> {
+enum Option with T {
     Some(T),
     None
 }
