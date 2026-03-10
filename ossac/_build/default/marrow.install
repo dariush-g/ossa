@@ -1,8 +1,0 @@
-lib: [
-  "_build/install/default/lib/marrow/META"
-  "_build/install/default/lib/marrow/dune-package"
-  "_build/install/default/lib/marrow/opam"
-]
-bin: [
-  "_build/install/default/bin/ossa"
-]
