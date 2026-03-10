@@ -1,1 +1,1 @@
-lib/midend/sema/symbols.ml: Hashtbl
+lib/sema/symbols.ml: Hashtbl

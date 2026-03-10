@@ -1,1 +1,1 @@
-lib/midend/sema/resolver.ml:
+lib/sema/resolver.ml:

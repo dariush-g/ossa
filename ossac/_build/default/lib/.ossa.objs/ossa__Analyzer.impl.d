@@ -1,1 +1,1 @@
-lib/midend/sema/analyzer.ml:
+lib/sema/analyzer.ml:

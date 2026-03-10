@@ -1,1 +1,1 @@
-lib/midend/sema/collect.ml:
+lib/sema/collect.ml:

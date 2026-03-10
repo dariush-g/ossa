@@ -1,3 +1,4 @@
 (executable
+ (public_name ossa)
  (name main)
  (libraries ossa))
