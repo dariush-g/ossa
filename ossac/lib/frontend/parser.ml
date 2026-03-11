@@ -630,7 +630,7 @@ let parse_func_decl p name =
   expect p LParen;
   let params = parse_param_list p in
   expect p RParen;
-  let ret = if eat p Arrow then Some (parse_type p) else None in
+  let ret = if eat p Arrow then parse_type p else TVoid in
   let body = parse_block p in
   if generics <> [] then pop_scope p;
   FuncDec
@@ -763,7 +763,7 @@ and parse_decl p =
         fname = "_";
         fgenerics = [];
         fparams = [];
-        fret = None;
+        fret = TVoid;
         fbody = { stmts = []; tail = None };
       }
 

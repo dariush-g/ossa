@@ -1,3 +1,16 @@
+let find_flag prefix args =
+  List.find_map
+    (fun arg ->
+      if
+        String.length arg > String.length prefix
+        && String.sub arg 0 (String.length prefix) = prefix
+      then
+        Some
+          (String.sub arg (String.length prefix)
+             (String.length arg - String.length prefix))
+      else None)
+    args
+
 let () =
   if Array.length Sys.argv < 2 then (
     prerr_endline "usage: ossa <file>";
@@ -6,6 +19,7 @@ let () =
   let args = Array.to_list Sys.argv |> List.tl in
   let emit_tokens = List.mem "--emit-tokens" args in
   let emit_ast = List.mem "--emit-ast" args in
+  let emit_sig = find_flag "--emit-sig=" args in
 
   let filename = Sys.argv.(1) in
 
@@ -26,15 +40,20 @@ let () =
 
   if errors <> [] then exit 1;
 
-  if emit_ast || not emit_tokens then begin
-    let decls, parse_errors = Ossa.Parser.parse tokens in
+  let decls, parse_errors = Ossa.Parser.parse tokens in
 
+  if emit_ast || not emit_tokens then begin
     List.iter
       (fun err ->
         Printf.eprintf "%s: %s\n" filename (Ossa.Lexer.error_to_string err))
       parse_errors;
 
     if emit_ast then List.iter Ossa.Ast.print_decl decls;
-
     if parse_errors <> [] then exit 1
-  end
+  end;
+
+  match emit_sig with
+  | Some path ->
+      let sig_ = Ossa.Collect.get_mw_module decls in
+      Ossa.Collect.emit_module_sig path sig_
+  | None -> Printf.eprintf "sig flag requires path name"

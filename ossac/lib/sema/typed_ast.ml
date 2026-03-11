@@ -53,4 +53,44 @@ and t_struct_init_field = { sf_init_sid : symbol; sf_init_value : t_expr }
 and t_enum_init_field = { ef_init_sid : symbol option; ef_init_value : t_expr }
 and t_match_arm = { arm_pat : t_pattern; arm_body : t_block }
 and t_block = { stmts : t_stmt list; tail : t_expr option }
-and t_stmt = Let of Ast.pattern * Ast.typ option * t_expr option
+
+and t_stmt =
+  | Let of Ast.pattern * Ast.typ option * t_expr option
+  | Expr of t_expr
+  | Return of t_expr option
+  | Loop of t_block
+  | Block of t_block
+  | Break
+  | Continue
+
+type t_func_decl = {
+  fname : symbol;
+  fgenerics : symbol list;
+  fparams : t_param list;
+  fret : r_typ option;
+  fbody : t_block;
+}
+
+type t_struct_decl = {
+  sname : symbol;
+  sgenerics : symbol list;
+  sfields : t_struct_init_field list;
+  sfuncs : t_func_decl list;
+}
+
+type t_enum_variant = { variant_name : string; fields : t_enum_field list }
+and t_enum_field = { field_name : symbol option; field_type : r_typ }
+
+type t_enum_decl = {
+  ename : symbol;
+  egenerics : symbol list;
+  evariants : t_enum_variant list;
+}
+
+type t_namespace_decl = { npath : Ast.path; ndecls : t_decl list }
+
+and t_decl =
+  | FuncDec of t_func_decl
+  | StructDec of t_struct_decl
+  | EnumDec of t_enum_decl
+  | NamespaceDec of t_namespace_decl

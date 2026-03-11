@@ -74,7 +74,7 @@ type func_decl = {
   fname : ident;
   fgenerics : ident list;
   fparams : param list;
-  fret : typ option;
+  fret : typ;
   fbody : block;
 }
 
@@ -331,9 +331,7 @@ let dump_func_decl indent_level (f : func_decl) =
   Printf.printf "%sparams = [%s]\n"
     (indent (indent_level + 1))
     (String.concat "; " (List.map dump_param f.fparams));
-  Printf.printf "%sret = %s\n"
-    (indent (indent_level + 1))
-    (dump_option dump_typ f.fret);
+  Printf.printf "%sret = %s\n" (indent (indent_level + 1)) (dump_typ f.fret);
   Printf.printf "%sbody:\n" (indent (indent_level + 1));
   dump_block (indent_level + 2) f.fbody
 
