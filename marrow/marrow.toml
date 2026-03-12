@@ -1,0 +1,5 @@
+[profile]
+name = "marrow"
+
+[bin]
+main = "src/main.oa"

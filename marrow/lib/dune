@@ -1,5 +1,6 @@
 (include_subdirs unqualified)
 
 (library
- (name marrow))
+ (name marrow_lib)
+ (libraries toml))
 
