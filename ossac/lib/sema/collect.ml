@@ -71,3 +71,16 @@ let load_module_sig (path : string) : mw_module =
   let m : mw_module = Marshal.from_channel ic in
   close_in ic;
   m
+
+let rec dump_sig_decl = function
+  | SigFunc f ->
+      Printf.printf "func %s(%s) -> %s\n" f.sfname
+        (String.concat ", " (List.map dump_param f.sfparams))
+        (dump_typ f.sfret)
+  | SigStruct s -> Printf.printf "struct %s { ... }\n" s.ssname
+  | SigEnum e -> Printf.printf "enum %s { ... }\n" e.sename
+  | SigNamespace n ->
+      Printf.printf "namespace %s\n" (String.concat "::" n.snpath);
+      List.iter dump_sig_decl n.sndecls
+
+let dump_module (m : mw_module) = List.iter dump_sig_decl m

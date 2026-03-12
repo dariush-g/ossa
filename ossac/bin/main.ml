@@ -20,6 +20,7 @@ let () =
   let emit_tokens = List.mem "--emit-tokens" args in
   let emit_ast = List.mem "--emit-ast" args in
   let emit_sig = find_flag "--emit-sig=" args in
+  let dump_sig = List.mem "--dump-sig" args in
 
   let filename = Sys.argv.(1) in
 
@@ -55,5 +56,6 @@ let () =
   match emit_sig with
   | Some path ->
       let sig_ = Ossa.Collect.get_mw_module decls in
-      Ossa.Collect.emit_module_sig path sig_
-  | None -> Printf.eprintf "sig flag requires path name"
+      Ossa.Collect.emit_module_sig path sig_;
+      if dump_sig then Ossa.Collect.dump_module sig_
+  | None -> ()

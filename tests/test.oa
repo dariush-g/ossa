@@ -7,11 +7,11 @@ main :: () -> int {
     return 0;
 }
 
-enum Option with T {
+enum Option<T> {
     Some(T),
     None
 }
 
-generic_function with T :: (x: T) -> int {
+generic_function<T> :: (x: T) -> int {
     return 0;
 }

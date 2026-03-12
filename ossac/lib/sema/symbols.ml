@@ -57,3 +57,4 @@ let resolve t name =
 let info t id = Hashtbl.find t.symbols id
 let name t id = (info t id).sname
 let kind t id = (info t id).skind
+

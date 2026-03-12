@@ -610,11 +610,13 @@ and parse_param_list p =
 (* ── generics ────────────────────────────────────────────────────── *)
 
 let parse_generics p =
-  if eat p With then (
+  if eat p Less then (
     push_scope p;
     let rec go acc =
       match current_tok p with
-      | DoubleColon | LBrace | LParen | EOF -> List.rev acc
+      | Greater | EOF ->
+          ignore (advance p);
+          List.rev acc
       | _ ->
           let name = expect_ident p in
           add_generic p name;
