@@ -665,11 +665,11 @@ let parse_struct_decl p =
         | _ -> go fields funcs
         end
     | _ ->
-        let field_name = expect_ident p in
+        let sfield_name = expect_ident p in
         expect p Colon;
-        let field_typ = parse_type p in
+        let sfield_typ = parse_type p in
         ignore (eat p Comma);
-        go ({ field_name; field_typ } :: fields) funcs
+        go ({ sfield_name; sfield_typ } :: fields) funcs
   in
   let fields, funcs = go [] [] in
   expect p RBrace;
@@ -689,7 +689,7 @@ let parse_enum_decl p =
     | _ ->
         let ft = parse_type p in
         ignore (eat p Comma);
-        parse_tuple_fields ({ field_name = None; field_type = ft } :: acc)
+        parse_tuple_fields ({ efield_name = None; efield_type = ft } :: acc)
   in
 
   let rec parse_named_fields acc =
@@ -701,7 +701,7 @@ let parse_enum_decl p =
         let ftyp = parse_type p in
         ignore (eat p Comma);
         parse_named_fields
-          ({ field_name = Some fname; field_type = ftyp } :: acc)
+          ({ efield_name = Some fname; efield_type = ftyp } :: acc)
   in
 
   let parse_variant_fields p =
@@ -727,7 +727,7 @@ let parse_enum_decl p =
         let vname = expect_ident p in
         let fields = parse_variant_fields p in
         ignore (eat p Comma);
-        go ({ variant_name = vname; fields } :: acc)
+        go ({ evariant_name = vname; efields = fields } :: acc)
   in
 
   let variants = go [] in

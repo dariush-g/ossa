@@ -29,10 +29,10 @@ type literal =
   | LChar of char
   | LBool of bool
 
-type struct_field = { field_name : string; field_typ : typ }
+type struct_field = { sfield_name : string; sfield_typ : typ }
 
-type enum_variant = { variant_name : string; fields : enum_field list }
-and enum_field = { field_name : string option; field_type : typ }
+type enum_variant = { evariant_name : string; efields : enum_field list }
+and enum_field = { efield_name : string option; efield_type : typ }
 
 type pattern =
   | PWildcard
@@ -176,21 +176,21 @@ let dump_param (p : param) =
 
 let dump_struct_field (f : struct_field) =
   "{" ^ "field_name="
-  ^ Printf.sprintf "%S" f.field_name
-  ^ "; field_typ=" ^ dump_typ f.field_typ ^ "}"
+  ^ Printf.sprintf "%S" f.sfield_name
+  ^ "; field_typ=" ^ dump_typ f.sfield_typ ^ "}"
 
 let dump_enum_field (f : enum_field) =
   "{" ^ "field_name="
-  ^ (match f.field_name with
+  ^ (match f.efield_name with
     | None -> "None"
     | Some s -> "Some(" ^ Printf.sprintf "%S" s ^ ")")
-  ^ "; field_type=" ^ dump_typ f.field_type ^ "}"
+  ^ "; field_type=" ^ dump_typ f.efield_type ^ "}"
 
 let dump_enum_variant (v : enum_variant) =
   "{" ^ "variant_name="
-  ^ Printf.sprintf "%S" v.variant_name
+  ^ Printf.sprintf "%S" v.evariant_name
   ^ "; fields=["
-  ^ String.concat "; " (List.map dump_enum_field v.fields)
+  ^ String.concat "; " (List.map dump_enum_field v.efields)
   ^ "]" ^ "}"
 
 let rec dump_pattern = function

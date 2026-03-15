@@ -32,22 +32,22 @@ type t_pattern =
 type t_param = { sid : symbol; r_typ : Ast.typ option; mode : Ast.param_mode }
 
 type t_expr =
-  | Unary of unary_op * t_expr
-  | Binary of binary_op * t_expr * t_expr
-  | Literal of t_literal
-  | Tuple of t_expr list
-  | Array of t_expr list
-  | Local of symbol
-  | Func of symbol
-  | Call of t_expr * t_expr list
-  | StructInit of symbol * t_struct_init_field list
-  | EnumInit of symbol * t_enum_init_field list
-  | Index of t_expr * t_expr
-  | If of t_expr * t_block * t_block
-  | Iterate of t_expr * t_expr
-  | Closure of t_param list * t_block
-  | Field of t_expr * symbol
-  | Match of t_expr * t_match_arm list
+  | TUnary of unary_op * t_expr
+  | TBinary of binary_op * t_expr * t_expr
+  | TLiteral of t_literal
+  | TTuple of t_expr list
+  | TArray of t_expr list
+  | TLocal of symbol
+  | TFunc of symbol
+  | TCall of t_expr * t_expr list
+  | TStructInit of symbol * t_struct_init_field list
+  | TEnumInit of symbol * t_enum_init_field list
+  | TIndex of t_expr * t_expr
+  | TIf of t_expr * t_block * t_block
+  | TIterate of t_expr * t_expr
+  | TClosure of t_param list * t_block
+  | TField of t_expr * symbol
+  | TMatch of t_expr * t_match_arm list
 
 and t_struct_init_field = { sf_init_sid : symbol; sf_init_value : t_expr }
 and t_enum_init_field = { ef_init_sid : symbol option; ef_init_value : t_expr }
@@ -55,13 +55,13 @@ and t_match_arm = { arm_pat : t_pattern; arm_body : t_block }
 and t_block = { stmts : t_stmt list; tail : t_expr option }
 
 and t_stmt =
-  | Let of Ast.pattern * Ast.typ option * t_expr option
-  | Expr of t_expr
-  | Return of t_expr option
-  | Loop of t_block
-  | Block of t_block
-  | Break
-  | Continue
+  | TLet of Ast.pattern * Ast.typ option * t_expr option
+  | TExpr of t_expr
+  | TReturn of t_expr option
+  | TLoop of t_block
+  | TBlock of t_block
+  | TBreak
+  | TContinue
 
 type t_func_decl = {
   fname : symbol;
@@ -90,7 +90,7 @@ type t_enum_decl = {
 type t_namespace_decl = { npath : Ast.path; ndecls : t_decl list }
 
 and t_decl =
-  | FuncDec of t_func_decl
-  | StructDec of t_struct_decl
-  | EnumDec of t_enum_decl
-  | NamespaceDec of t_namespace_decl
+  | TFuncDec of t_func_decl
+  | TStructDec of t_struct_decl
+  | TEnumDec of t_enum_decl
+  | TNamespaceDec of t_namespace_decl
