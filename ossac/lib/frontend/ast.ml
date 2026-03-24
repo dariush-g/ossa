@@ -11,6 +11,7 @@ type typ =
   | TString
   | TBool
   | TVoid
+  | TChar
   | TNamed of path
   | TPtr of typ
   | TArray of typ
@@ -118,6 +119,7 @@ let rec dump_typ = function
   | TString -> "TString"
   | TBool -> "TBool"
   | TVoid -> "TVoid"
+  | TChar -> "TChar"
   | TNamed p -> "TNamed(" ^ dump_path p ^ ")"
   | TPtr t -> "TPtr(" ^ dump_typ t ^ ")"
   | TArray t -> "TArray(" ^ dump_typ t ^ ")"

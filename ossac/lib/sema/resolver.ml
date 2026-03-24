@@ -7,6 +7,7 @@ let rec resolve_typ t (ty : Ast.typ) : r_typ =
   | Ast.TInt i -> TInt i
   | Ast.TFloat f -> TFloat f
   | Ast.TString -> TString
+  | Ast.TChar -> TChar
   | Ast.TBool -> TBool
   | Ast.TVoid -> TVoid
   | Ast.TPtr inner -> TPtr (resolve_typ t inner)

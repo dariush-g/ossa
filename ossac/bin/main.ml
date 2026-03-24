@@ -58,4 +58,10 @@ let () =
       let sig_ = Ossa.Collect.get_mw_module decls in
       Ossa.Collect.emit_module_sig path sig_;
       if dump_sig then Ossa.Collect.dump_module sig_
-  | None -> ()
+  | None ->
+      let st, resolved = Ossa.Resolver.resolve [] decls in
+      let type_errors = Ossa.Analyzer.analyze st resolved in
+      List.iter
+        (fun msg -> Printf.eprintf "%s: error: %s\n" filename msg)
+        type_errors;
+      if type_errors <> [] then exit 1

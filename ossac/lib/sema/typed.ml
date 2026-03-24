@@ -7,6 +7,7 @@ type r_typ =
   | TString
   | TBool
   | TVoid
+  | TChar
   | TNamed of symbol
   | TPtr of r_typ
   | TArray of r_typ
@@ -67,7 +68,7 @@ type t_func_decl = {
   fname : symbol;
   fgenerics : symbol list;
   fparams : t_param list;
-  fret : r_typ option;
+  fret : r_typ;
   fbody : t_block;
 }
 
