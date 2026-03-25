@@ -18,12 +18,12 @@ let rec llvm_type t =
   | TPtr _ -> Llvm.pointer_type context
   | TString -> Llvm.pointer_type context
   | TChar -> Llvm.i8_type context
-  | TArray t -> Llvm.array_type (llvm_type t) size
+  | TArray (t, size) -> Llvm.array_type (llvm_type t) size
   | TTuple ts ->
       Llvm.struct_type context (Array.of_list (List.map llvm_type ts))
   | TFunc (params, ret) ->
       let param_types = Array.of_list (List.map llvm_type params) in
-      let fn_type = Llvm.function_type (llvm_type ret) param_types in
+      let _fn_type = Llvm.function_type (llvm_type ret) param_types in
       Llvm.pointer_type context
   | TNamed sym -> Hashtbl.find named_types sym
   | TGeneric _ -> failwith "bug: generic type in codegen"

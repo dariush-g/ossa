@@ -14,7 +14,7 @@ type typ =
   | TChar
   | TNamed of path
   | TPtr of typ
-  | TArray of typ
+  | TArray of typ * int
   | TTuple of typ list
   | TFunc of typ list * typ
   | TGeneric of string
@@ -122,7 +122,7 @@ let rec dump_typ = function
   | TChar -> "TChar"
   | TNamed p -> "TNamed(" ^ dump_path p ^ ")"
   | TPtr t -> "TPtr(" ^ dump_typ t ^ ")"
-  | TArray t -> "TArray(" ^ dump_typ t ^ ")"
+  | TArray (t, size) -> "TArray(" ^ dump_typ t ^ Printf.sprintf "%d" size ^ ")"
   | TTuple ts -> "TTuple([" ^ String.concat "; " (List.map dump_typ ts) ^ "])"
   | TFunc (args, ret) ->
       "TFunc(["

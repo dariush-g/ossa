@@ -105,8 +105,13 @@ let rec parse_type p =
   | LBracket ->
       ignore (advance p);
       let t = parse_type p in
+      expect p Semicolon;
+      let size = match (current_tok p) with
+        | IntLiteral s -> ignore (advance p); int_of_string s
+        | _ -> error p "expected array size"
+      in
       expect p RBracket;
-      TArray t
+      TArray (t, size)
   | Identifier s ->
       ignore (advance p);
       let base = if is_generic p s then TGeneric s else resolve_named_type s in

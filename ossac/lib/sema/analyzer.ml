@@ -33,7 +33,7 @@ let rec typ_to_string st = function
   | TChar -> "char"
   | TNamed s -> Symbols.name st s
   | TPtr t -> "*" ^ typ_to_string st t
-  | TArray t -> "[" ^ typ_to_string st t ^ "]"
+  | TArray (t, size) -> "[" ^ typ_to_string st t ^ "; " ^ string_of_int size ^ "]"
   | TTuple ts -> "(" ^ String.concat ", " (List.map (typ_to_string st) ts) ^ ")"
   | TFunc (args, ret) ->
       "("
@@ -54,7 +54,7 @@ let rec types_equal a b =
   | TString, TString | TBool, TBool | TVoid, TVoid | TChar, TChar -> true
   | TNamed a, TNamed b -> a = b
   | TPtr a, TPtr b -> types_equal a b
-  | TArray a, TArray b -> types_equal a b
+  | TArray (a, sa), TArray (b, sb) -> sa = sb && types_equal a b
   | TTuple a, TTuple b ->
       List.length a = List.length b && List.for_all2 types_equal a b
   | TFunc (a1, r1), TFunc (a2, r2) ->
@@ -75,7 +75,7 @@ let rec check_type_exists a = function
         error a
           (Printf.sprintf "type '%s' is not a struct or enum"
              (Symbols.name a.st sid))
-  | TPtr t | TArray t -> check_type_exists a t
+  | TPtr t | TArray (t, _) -> check_type_exists a t
   | TTuple ts -> List.iter (check_type_exists a) ts
   | TFunc (args, ret) ->
       List.iter (check_type_exists a) args;
@@ -133,11 +133,12 @@ let rec infer_type a expr =
       | Eq | Ne | Lt | Le | Gt | Ge -> TBool
       | And | Or -> TBool
       | Assign | AddAssign | SubAssign | MulAssign | DivAssign -> TVoid
-      | Range -> TArray lt
+      | Range -> TArray (lt, 0)
     end
   | TTuple es -> TTuple (List.map (infer_type a) es)
   | TArray es -> begin
-      match es with [] -> TArray TVoid | e :: _ -> TArray (infer_type a e)
+      let len = List.length es in
+      match es with [] -> TArray (TVoid, len) | e :: _ -> TArray (infer_type a e, len)
     end
   | TCall (callee, _) -> begin
       let ct = infer_type a callee in
@@ -145,7 +146,7 @@ let rec infer_type a expr =
     end
   | TIndex (arr, _) -> begin
       let t = infer_type a arr in
-      match t with TArray inner -> inner | _ -> TVoid
+      match t with TArray (inner, _) -> inner | _ -> TVoid
     end
   | TIf (_, then_b, _) -> infer_block_type a then_b
   | TClosure (params, body) ->
@@ -371,8 +372,8 @@ let check_func a (f : t_func_decl) =
       | None -> ())
     f.fparams;
   (* check return type exists *)
-  Option.iter (check_type_exists a) f.fret;
-  a.ret_typ <- f.fret;
+  check_type_exists a f.fret;
+  a.ret_typ <- Some f.fret;
   check_block a f.fbody;
   a.ret_typ <- None;
   Symbols.pop_scope a.st

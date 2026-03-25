@@ -21,7 +21,7 @@ let rec mangle_typ st = function
   | TChar -> "char"
   | TNamed s -> name st s
   | TPtr t -> "ptr." ^ mangle_typ st t
-  | TArray t -> "arr." ^ mangle_typ st t
+  | TArray (t, size) -> "arr." ^ mangle_typ st t ^ "." ^ string_of_int size
   | TTuple ts -> "tup." ^ String.concat "." (List.map (mangle_typ st) ts)
   | TFunc (args, ret) ->
       "fn."
@@ -50,7 +50,7 @@ let rec apply_subst sub = function
       match Hashtbl.find_opt sub s with Some t -> t | None -> TGeneric s
     end
   | TPtr t -> TPtr (apply_subst sub t)
-  | TArray t -> TArray (apply_subst sub t)
+  | TArray (t, size) -> TArray (apply_subst sub t, size)
   | TTuple ts -> TTuple (List.map (apply_subst sub) ts)
   | TFunc (args, ret) ->
       TFunc (List.map (apply_subst sub) args, apply_subst sub ret)
@@ -213,7 +213,7 @@ let specialize_func ctx spec =
             })
           f.fparams
       in
-      let fret = Option.map (apply_subst sub) f.fret in
+      let fret = apply_subst sub f.fret in
       let fbody = subst_block ctx sub f.fbody in
       ctx.output <-
         TFuncDec { fname = spec.new_sym; fgenerics = []; fparams; fret; fbody }
@@ -236,7 +236,7 @@ let specialize_struct ctx spec =
         List.map
           (fun (f : t_func_decl) ->
             let inner_sub = make_subst f.fgenerics spec.type_args in
-            let fret = Option.map (apply_subst inner_sub) f.fret in
+            let fret = apply_subst inner_sub f.fret in
             let fbody = subst_block ctx inner_sub f.fbody in
             { f with fgenerics = []; fret; fbody })
           s.sfuncs
@@ -291,7 +291,7 @@ let rec scan_type ctx = function
   | TApp (TNamed sid, args) | TApp (TGeneric sid, args) ->
       List.iter (scan_type ctx) args;
       ignore (request_spec ctx sid args)
-  | TPtr t | TArray t -> scan_type ctx t
+  | TPtr t | TArray (t, _) -> scan_type ctx t
   | TTuple ts -> List.iter (scan_type ctx) ts
   | TFunc (args, ret) ->
       List.iter (scan_type ctx) args;
@@ -350,7 +350,7 @@ let scan_func ctx (f : t_func_decl) =
         (fun t -> scan_type ctx (Resolver.resolve_typ ctx.st t))
         p.r_typ)
     f.fparams;
-  Option.iter (scan_type ctx) f.fret;
+  scan_type ctx f.fret;
   scan_block ctx f.fbody
 
 let rec scan_decl ctx = function

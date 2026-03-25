@@ -10,7 +10,7 @@ type r_typ =
   | TChar
   | TNamed of symbol
   | TPtr of r_typ
-  | TArray of r_typ
+  | TArray of r_typ * int
   | TTuple of r_typ list
   | TFunc of r_typ list * r_typ
   | TGeneric of symbol

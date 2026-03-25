@@ -11,7 +11,7 @@ let rec resolve_typ t (ty : Ast.typ) : r_typ =
   | Ast.TBool -> TBool
   | Ast.TVoid -> TVoid
   | Ast.TPtr inner -> TPtr (resolve_typ t inner)
-  | Ast.TArray inner -> TArray (resolve_typ t inner)
+  | Ast.TArray (inner, size) -> TArray (resolve_typ t inner, size)
   | Ast.TTuple ts -> TTuple (List.map (resolve_typ t) ts)
   | Ast.TFunc (args, ret) ->
       TFunc (List.map (resolve_typ t) args, resolve_typ t ret)
@@ -125,7 +125,7 @@ let resolve_func_decl t (f : Ast.func_decl) : t_func_decl =
   let fgenerics = List.map (fun g -> fresh t g SGeneric) f.fgenerics in
   (* register params *)
   let fparams = List.map (resolve_param t) f.fparams in
-  let fret = Some (resolve_typ t f.fret) in
+  let fret = resolve_typ t f.fret in
   let fbody = resolve_block t f.fbody in
   pop_scope t;
   { fname; fgenerics; fparams; fret; fbody }
